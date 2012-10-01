@@ -7,7 +7,7 @@
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}layout.css" />
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}style.css"  />
   <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
-  <title>Google Calendar/Group Mgmt.</title>
+  <title>PSU LDAP Edit</title>
   <meta charset="utf-8">
  </head>
  <body>
@@ -78,7 +78,8 @@
 
          f = document.forms['modify_form'];
 
-         f.elements['id_group_dn'].value=a_split[1].substring(4);
+         //f.elements['id_group_dn'].value=a_split[1].substring(4);
+         $("#dn_display").html(a_split[1].substring(4));
 
          c = (a_split[2].indexOf("['")+2);
          d =  a_split[2].indexOf("']");
@@ -129,7 +130,7 @@
      type:"POST",
      data:"csrfmiddlewaretoken=" + $("input[type=hidden][name=csrfmiddlewaretoken]").attr("value")+
 
-      "&group_dn="               + $("input[name=group_dn]")          .val().replace('&','%26')+
+      "&group_dn="               + $("#dn_display")                   .html().replace('&','%26')+
       "&modify_group_name="      + $("input[name=modify_group_name]") .val().replace('&','%26')+
       "&group_preferredcn="      + $("input[name=group_preferredcn]") .val().replace('&','%26')+
       "&group_room="             + $("input[name=group_room]")        .val().replace('&','%26')+
@@ -235,9 +236,11 @@
           <form id="modify_form" action='/modify/' method='post'>
            {% csrf_token %}
            {{ modify_form.non_field_errors }}
+           <!-- {{ modify_form.group_dn }} -->
+            
            <label for="group_dn">Group DN</label>
            <br/>
-           {{ modify_form.group_dn }}
+           <span id="dn_display"></span>
            <br/>
            <label for="group_name">Group Name (cn)</label>
            <br/>

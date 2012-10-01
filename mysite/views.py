@@ -1,4 +1,4 @@
-'''psu_gcal/mysite/psu_gcal/views.py'''
+'''psu_ldap/mysite/psu_ldap/views.py'''
 
 from django.shortcuts               import render_to_response 
 from django.http                    import HttpResponse, HttpResponseRedirect
@@ -16,14 +16,19 @@ __logger__ = logging.getLogger(__name__)
 
 @login_required
 def index(request):
-    '''this is the index method, it serves and handles the calendar creation
-    owner addition functionality'''
+    '''this is the index method, it serves and handles all functionality
+
+        @params:
+            request - the django request object.'''
+
     #check for correct permission
     if not request.user.has_perm('mysite.psu_ldap'):
         return render_to_response('invalid.html')
+
     else:
         #check if form submitted
         if not request.method == 'POST':
+            #if form not submitted, ie: no POST, then render the blank form(s)
             query_form = LdapQueryForm(initial = {'query_group_name':''})
             modify_form = LdapModifyForm(initial = {'group_dn':'','modify_group_name':'',
                 'group_preferredcn':'','group_room':'','group_phone':'','group_email':'',
@@ -34,22 +39,23 @@ def index(request):
                     { 'query_form':query_form, 'modify_form':modify_form },
                     context_instance=RequestContext(request)  )
 
-        #if it's the calendar form that they submitted
+        #if it's the modify form that they submitted it will have this field:
         elif (u'group_phone' in request.POST.keys()):
-            #return HttpResponse(request.POST) #debug
+            #get the form
             form = LdapModifyForm( request.POST )
+
             #check if form valid
             if not form.is_valid():
                 return HttpResponse("form not valid...")
             #handle form submission
             else:
                 group_dn, group_name, group_preferredcn, group_room, group_phone, group_email, group_labeledUri = modify_process_form(form)
-                #return HttpResponse('group_dn: {0}<br/>group_name: {1}<br/>group_preferredcn: {2}<br/>group_room: {3}<br/>group_phone: {4}<br/>group_email: {5}<br/>group_labeledUri: {6}'\
-                #    .format(group_dn, group_name, group_preferredcn, group_room, group_phone, group_email, group_labeledUri)) #debug
-            #try:
+
+            #is there a labeled URI for this entry?
             has_labeled_uri = False
             if (group_labeledUri is not 'NOT PERMITTED') and (group_labeledUri is not ''):
                 has_labeled_uri = True
+
             lookup_cn = ''
             dn_split = group_dn.split(',')
             for section in dn_split:
@@ -163,9 +169,9 @@ def index(request):
                 return HttpResponse("form not valid...")
             #handle form submission
             else:
-                print 'form.data: {0}'.format(form.data)
+                #print 'form.data: {0}'.format(form.data)
                 group_name = form.cleaned_data['query_group_name']
-                print 'searched for: {0}'.format(group_name) #debug
+                #print 'searched for: {0}'.format(group_name) #debug
                 try:
                     result = search('cn={0}'.format(group_name),
                         {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
@@ -189,7 +195,7 @@ def index(request):
                                 .format(this_dn, result['cn'], result['preferredcn'],
                                 result['roomNumber'], result['telephoneNumber'], result['mail'])
                 except Exception, error:
-                    print '{0} :\n\t{1}'.format(Exception, error)
+                    print 'search error: {0}\n\t{1}'.format(Exception, error)
                     result = ''
                 return HttpResponse('results for: {0}<br/>{1}'.format(group_name, result)) #debug
 
