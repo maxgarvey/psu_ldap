@@ -5,152 +5,13 @@
   {% get_static_prefix as STATIC_URL %}
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}reset.css"  />
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}layout.css" />
-  <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}style.css"  />
+  <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}ldap_style.css"  />
   <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
+  <script src="{{STATIC_URL}}logic.js"></script>
   <title>PSU LDAP Edit</title>
   <meta charset="utf-8">
  </head>
  <body>
-  <script type="text/javascript" href="{{ STATIC_URL }}index.js" ></script>
-  <!-- --> <script type="text/javascript">
-  /**/ $(document).ready( function(){
-
-   //this function resets a form
-   function resetForm(_form){
-    _form.find('input:text, input:password, input:file, select').val('');
-    _form.find('input:radio, input:checkbox').removeAttr('checked').removeAttr('selected');
-   }
-
-   //this block hides the forms initially
-   $("#query").addClass("inner").hide();
-   $("#instructions_div").addClass("inner").hide();
-   $("#modify").addClass("inner").hide();
-   $("#success").addClass("inner").hide();
-   $("#waiting").addClass("inner").hide();
-
-   //for each button, the other forms will slide up
-   //and the relevant one will be displayed
-   $("#query_view").click( function(){
-    $("#instructions_div").slideUp();
-    $("#modify").slideUp();
-    $("#success").hide();
-    $("#waiting").hide();
-    $("#query").slideDown();
-
-    //this line resets the form when the user clicks 
-    //on the button for the other form
-    resetForm($("#modify_form"));
-   });
-
-   $("#instructions_view").click( function(){
-    $("#query").slideUp();
-    $("#modify").slideUp();
-    $("#success").hide();
-    $("#waiting").hide()
-    $("#instructions_div").slideDown();
-   });
-
-   $("#modify_view").click( function(){
-    $("#query").slideUp();
-    $("#instructions_div").slideUp();
-    $("#success").hide();
-    $("#waiting").hide()
-    $("#modify").slideDown();
-
-    //this line resets the form when the user clicks 
-    //on the button for the other form
-    //resetForm($("#query_form"));
-   });
-   //this block spoofs a form submit for the query form
-   $("#query_submit").click( function() {
-    $.ajax({
-      url:"/query/",
-      type:"POST",
-      data:"csrfmiddlewaretoken="+$("input[type=hidden][name=csrfmiddlewaretoken]").attr("value")+
-        "&query_group_name="+$("input[name=query_group_name]").val().replace('&','%26'),
-      success:function(a){
-         $('#waiting').slideUp();
-         $('#success').html('<div id="form_div">'+a+' </div>');
-         $('#success').slideDown();
-         a_split = a.split('<br/>');
-         $("#last_query").remove();
-         //$("#modify_form").html('<span id="last_query">'+a_split[1]+'<br/></span>'+$("#modify_form").html());
-
-         f = document.forms['modify_form'];
-
-         //f.elements['id_group_dn'].value=a_split[1].substring(4);
-         $("#dn_display").html(a_split[1].substring(4));
-
-         c = (a_split[2].indexOf("['")+2);
-         d =  a_split[2].indexOf("']");
-
-         f.elements['id_modify_group_name'].value=a_split[2].substring(c,d);
-
-         c = (a_split[3].indexOf("['")+2);
-         d =  a_split[3].indexOf("']");
-
-         f.elements['id_group_preferredcn'].value=a_split[3].substring(c,d);
-
-         c = (a_split[5].indexOf("['")+2);
-         d =  a_split[5].indexOf("']");
-
-         f.elements['id_group_phone'].value=a_split[5].substring(c,d);
-
-         c = (a_split[4].indexOf("['")+2);
-         d =  a_split[4].indexOf("']");
-
-         f.elements['id_group_room'].value=a_split[4].substring(c,d);
-
-         c = (a_split[6].indexOf("['")+2);
-         d =  a_split[6].indexOf("']");
-
-         f.elements['id_group_email'].value=a_split[6].substring(c,d);
-
-         if (a_split.length > 7){
-          $("#labeledUri_div").show();
-          c=(a_split[7].indexOf("['")+2);d=a_split[7].indexOf("']");
-          f.elements['id_group_labeledUri'].value=a_split[7].substring(c,d);
-         }
-         else {
-          f.elements['id_group_labeledUri'].value="NOT PERMITTED";
-          $("#labeledUri_div").hide();
-         }
-        }
-      }
-    );
-     $("#instructions_div").slideUp();
-     $("#modify").slideUp();
-     $("#query").slideUp();
-     $("#waiting").slideDown();
-    });
-   //this block spoofs a form submit for the group form
-   $("#modify_submit").click( function() {
-    $.ajax({
-     url:"/modify/",
-     type:"POST",
-     data:"csrfmiddlewaretoken=" + $("input[type=hidden][name=csrfmiddlewaretoken]").attr("value")+
-
-      "&group_dn="               + $("#dn_display")                   .html().replace('&','%26')+
-      "&modify_group_name="      + $("input[name=modify_group_name]") .val().replace('&','%26')+
-      "&group_preferredcn="      + $("input[name=group_preferredcn]") .val().replace('&','%26')+
-      "&group_room="             + $("input[name=group_room]")        .val().replace('&','%26')+
-      "&group_phone="            + $("input[name=group_phone]")       .val().replace('&','%26')+
-      "&group_email="            + $("input[name=group_email]")       .val().replace('&','%26')+
-      "&group_labeledUri="       + $("input[name=group_labeledUri]")  .val().replace('&','%26'),
-
-      success:function(a){
-       $('#waiting').slideUp();
-       $('#success').html('<div id="form_div">'+a+' </div>');
-       $('#success').slideDown();
-      }
-    });
-    $("#instructions_div").slideUp();
-    $("#modify").slideUp();
-    $("#query").slideUp();
-    $("#waiting").slideDown();
-   });
-});
-  </script> <!-- -->
   <div id="page">
 
    <div id="header-overlay">
@@ -185,35 +46,16 @@
       <div id="container">
        <div id="outer">
 
-        <div id="google_header">
-         <h1>LDAP Utility</h1>
-         <ul id="navbar">
-         <div id="navbar_posish">
-          <li id="query_view" class="app_nav_li">
-           <div id="navbar_div_left">
-            Query Form
-           </div><!-- navbar_div_left -->  
-          </li>
-          <li id="modify_view" class="app_nav_li">
-           <div id="navbar_div">
-            Modify Form
-           </div><!-- navbar_div -->
-          </li>
-          <li id="instructions_view" class="app_nav_li">
-           <div id="navbar_div">
-            Instructions
-           </div><!-- navbar_div -->
-          </li>
-          <a href="/accounts/logout">
-           <li id="logout_button" class="app_nav_li">
-            <div id="navbar_div">
-             Logout
-            </div><!-- navbar_div -->
-           </li>
-          </a>
-          </div> <!-- navbar_posish   MAYBE NOT NECESSARY???? -->
+        <div id="nav_left">
+         <ul id="l_nav"><br/><br/>
+          <li id='l_nav_query' class="app_nav_li">Query</li><br/><br/>
+          <li id='l_nav_modify' class="app_nav_li">Modify</li><br/><br/>
+          <li id='l_nav_logout' class="app_nav_li"><a href="/accounts/logout">Logout</a></li>
          </ul>
-        </div><!-- google_header -->
+        </div>
+
+        <div id="div_header">
+         <h1 id="recent_view" class="app_nav_li">LDAP Utility</h1>
 
         <div id="query">
          <div id="form_div">
@@ -224,9 +66,8 @@
            <br/>
            {{ query_form.query_group_name }}
            <br/><br/>
-           <div id="query_submit" class="submit_div">
-            <strong>Submit</strong>
-           </div><!-- query_submit -->
+           <input type="button" id="query_submit" value="submit" class="submit_button">
+           </input><!-- query_submit -->
           </form><!-- query_form  -->
          </div><!-- form_div -->
         </div><!-- query -->
@@ -269,42 +110,30 @@
             <br/>
            </div>
            <br/>
-           <div id="modify_submit" class="submit_div">
-            <strong>Submit</strong>
-           </div><!-- group_submit -->
+           <input type="button" id="modify_submit" value="submit" class="submit_button">
+           </input><!-- group_submit -->
           </form>
          </div><!-- form_div -->
         </div><!-- modify -->
 
-        <div id="instructions_div">
-         <div id='form_div'>
-          <p>
-           <strong>Be sure to click the 'submit' buttons rather 
-           than pressing enter.</strong><br/><br/>
-           <strong>Query Form</strong><br/>
-           Enter the name of the group that you will be editing. <br/>
-           If it matches an entry, the current values will be <br/>
-           displayed, otherwise, it will tell you something went <br/>
-           wrong. After being queried, the group's relevant data <br/>
-           will be added to the appropriate fields on the Modify <br/>
-           Form.<br/><br/>
-           <strong>Modify Form</strong><br/>
-           After querying a group, this form will be populated <br/>
-           with all the data that shows up on the directory site. <br/>
-           if the group matches, then don't change the DN, but <br/>
-           any/all of the other fields can be changed to the user's <br/>
-           specifications.<br/>
-          </p>
-         </div><!-- form_div -->
-        </div><!-- instructions_div -->
+        <div id="recent">
+         <div id="form_div">
+          <p></p>
+         </div>
+        </div>
+
         <div id="success">
          <div id="form_div">
          </div><!-- form_div -->
         </div><!-- success  -->
+
         <div id="waiting">
          <div id="form_div">
           Waiting for response...
          </div><!-- form_div -->
+         </div>
+
+         </div><!-- div_header -->
         </div><!-- waiting -->
        </div><!-- outer -->
       </div><!-- conainer -->

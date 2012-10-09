@@ -1,0 +1,15 @@
+Queried for: cn=cn=acait, ou=groups, dc=pdx, dc=edu
+Queried for: cn=cn=acait, ou=groups, dc=pdx, dc=edu
+Queried for: cn=cn=Aaup, ou=groups, dc=pdx, dc=edu
+Queried for: cn=cn=Aaup, ou=groups, dc=pdx, dc=edu
+Queried for: cn=cn=Aaup, ou=groups, dc=pdx, dc=edu
+Queried for: cn=cn=Aaup, ou=groups, dc=pdx, dc=edu
+Queried for: cn=cn=acait, ou=groups, dc=pdx, dc=edu
+Queried for: cn=cn=acait, ou=groups, dc=pdx, dc=edu
+Queried for: cn=cn=acait, ou=groups, dc=pdx, dc=edu
+Queried for: cn=Academic Events<br/>results: this group doesn't show up in the online directory.
+Queried for: cn=Accounts Payable<br/>results: no matching record for this group name.
+Queried for: cn=Academic Payroll<br/>results: this group doesn't show up in the online directory.
+Queried for: cn=cn=Accounts Receivable, ou=groups, dc=pdx, dc=edu
+Queried for: cn=cn=Athletic Administration Directory, ou=groups, dc=pdx, dc=edu
+Queried for: cn=bleeeboo<br/>results: no matching record for this group name.
