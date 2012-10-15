@@ -23,8 +23,8 @@ class query_test:
         '''init the client obj and the new cal's name to null'''
         self.creds  = None
         self.client = None
-        self.before_dict = {'preferredcn':'AAUP','roomNumber':'232 SMC','telephoneNumber':'5-4414','mail':'aaup@psuaaup.net','labeledUri':'www.email.net'}
-        self.after_dict = {'preferredcn':'AAUPa','roomNumber':'232 SMCee','telephoneNumber':'5-44141','mail':'aaup@psuaaup.com','labeledUri':'www.email.com'}
+        self.before_dict = {'preferredcn':'AAUP','roomNumber':'232 SMC','telephoneNumber':'5-4414','mail':'aaup@psuaaup.net'} #,'labeledUri':'www.email.net'}
+        self.after_dict = {'preferredcn':'AAUPa','roomNumber':'232 SMCee','telephoneNumber':'5-44141','mail':'aaup@psuaaup.com'} #,'labeledUri':'www.email.com'}
  
         self.before_dn = 'cn=aaup,ou=groups,dc=pdx,dc=edu'
         self.after_dn = 'cn=_aaup,ou=groups,dc=pdx,dc=edu'
@@ -58,7 +58,7 @@ class query_test:
         ldap group'''
         results = search('cn=aaup', {'basedn':'ou=groups,dc=pdx,dc=edu'}, self.creds)
         #print "results: {0}".format(results) #debug
-        assert (results == (101, [('cn=AAUP, ou=groups, dc=pdx, dc=edu', {'telephoneNumber': ['5-4414'], 'cn': ['AAUP'], 'psupublish': ['yes'], 'facsimileTelephoneNumber': ['(503) 725-8124'], 'ou': ['DEPT', 'groups'], 'mailLocalAddress': ['aaup2@pdx.edu'], 'preferredcn': ['AAUP'], 'roomNumber': ['232 SMC'], 'objectClass': ['top', 'organizationalUnit', 'psuOrganizationalUnit', 'inetLocalMailRecipient', 'mailGroup', 'labeledURIObject'], 'mgrpRFC822MailMember': ['aaup@psuaaup.net'], 'mail': ['aaup@psuaaup.net'], 'postalAddress': ['Portland State University PO Box 751 Portland, OR 97207-0751'], 'labeledUri': ['www.email.net'], 'psumailcode': ['AAUP']})]))
+        assert ((results[0] == 101) and (results[1][0][0] == 'cn=AAUP, ou=groups, dc=pdx, dc=edu')) #(101, [('cn=AAUP, ou=groups, dc=pdx, dc=edu', {'telephoneNumber': ['5-4414'], 'cn': ['AAUP'], 'psupublish': ['yes'], 'facsimileTelephoneNumber': ['(503) 725-8124'], 'ou': ['DEPT', 'groups'], 'mailLocalAddress': ['aaup2@pdx.edu'], 'preferredcn': ['AAUP'], 'roomNumber': ['232 SMC'], 'objectClass': ['top', 'organizationalUnit', 'psuOrganizationalUnit', 'inetLocalMailRecipient', 'mailGroup', 'labeledURIObject'], 'mgrpRFC822MailMember': ['aaup@psuaaup.net'], 'mail': ['aaup@psuaaup.net'], 'postalAddress': ['Portland State University PO Box 751 Portland, OR 97207-0751'], 'labeledUri': ['www.email.net'], 'psumailcode': ['AAUP']})]))
 
     @with_setup(setUp, tearDown)
     def test_query_phony(self):
@@ -77,7 +77,7 @@ class query_test:
         #print 'results: {0}'.format(results) #debug
         modify('cn=aaup,ou=groups,dc=pdx,dc=edu', self.after_dict,
            self.before_dict, self.creds)
-        assert (results == (101, [('cn=AAUP, ou=groups, dc=pdx, dc=edu', {'telephoneNumber': ['5-44141'], 'cn': ['AAUP'], 'psupublish': ['yes'], 'facsimileTelephoneNumber': ['(503) 725-8124'], 'ou': ['DEPT', 'groups'], 'mailLocalAddress': ['aaup2@pdx.edu'], 'preferredcn': ['AAUPa'], 'roomNumber': ['232 SMCee'], 'objectClass': ['top', 'organizationalUnit', 'psuOrganizationalUnit', 'inetLocalMailRecipient', 'mailGroup', 'labeledURIObject'], 'mgrpRFC822MailMember': ['aaup@psuaaup.net'], 'mail': ['aaup@psuaaup.com'], 'postalAddress': ['Portland State University PO Box 751 Portland, OR 97207-0751'], 'labeledUri': ['www.email.com'], 'psumailcode': ['AAUP']})]))
+        assert ((results[0] == 101) and (results[1][0][0] == 'cn=AAUP, ou=groups, dc=pdx, dc=edu') and (type(results[1][0][1] == dict))) 
 
     @with_setup(setUp, tearDown)
     def test_modify_phony(self):
@@ -117,7 +117,7 @@ class query_test:
         results = search('cn={0}'.format(self.after_group_name),
             {'basedn':'ou=groups,dc=pdx,dc=edu'}, self.creds)
         modify_rdn(self.after_dn, 'cn={0}'.format(self.before_group_name), self.creds, True)
-        assert (results == (101, [('cn=_aaup, ou=groups, dc=pdx, dc=edu', {'telephoneNumber': ['5-4414'], 'cn': ['_aaup'], 'psupublish': ['yes'], 'facsimileTelephoneNumber': ['(503) 725-8124'], 'ou': ['DEPT', 'groups'], 'mailLocalAddress': ['aaup2@pdx.edu'], 'preferredcn': ['AAUP'], 'roomNumber': ['232 SMC'], 'objectClass': ['top', 'organizationalUnit', 'psuOrganizationalUnit', 'inetLocalMailRecipient', 'mailGroup', 'labeledURIObject'], 'mgrpRFC822MailMember': ['aaup@psuaaup.net'], 'mail': ['aaup@psuaaup.net'], 'postalAddress': ['Portland State University PO Box 751 Portland, OR 97207-0751'], 'labeledUri': ['www.email.net'], 'psumailcode': ['AAUP']})]))
+        assert ((results[0] == 101) and (results[1][0][0] == 'cn=_aaup, ou=groups, dc=pdx, dc=edu')) #(101, [('cn=_aaup, ou=groups, dc=pdx, dc=edu', {'telephoneNumber': ['5-4414'], 'cn': ['_aaup'], 'psupublish': ['yes'], 'facsimileTelephoneNumber': ['(503) 725-8124'], 'ou': ['DEPT', 'groups'], 'mailLocalAddress': ['aaup2@pdx.edu'], 'preferredcn': ['AAUP'], 'roomNumber': ['232 SMC'], 'objectClass': ['top', 'organizationalUnit', 'psuOrganizationalUnit', 'inetLocalMailRecipient', 'mailGroup', 'labeledURIObject'], 'mgrpRFC822MailMember': ['aaup@psuaaup.net'], 'mail': ['aaup@psuaaup.net'], 'postalAddress': ['Portland State University PO Box 751 Portland, OR 97207-0751'], 'labeledUri': ['www.email.net'], 'psumailcode': ['AAUP']})]))
 
     @with_setup(setUp, tearDown)
     def test_modify_rdn_phony(self):
