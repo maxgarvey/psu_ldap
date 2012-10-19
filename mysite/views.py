@@ -17,14 +17,13 @@ import os
 import logging
 __logger__ = logging.getLogger(__name__)
 
+#helper function for processing form input
 def clean_string(my_string):
     #get parens right
-    my_string.replace("(","\\(").replace(")","\\)")
+    my_string = my_string.replace('(','\(').replace(')','\)')
     #get ampersand
-    #my_string.replace("&","\\&")
     #my_string.replace("%26","&")
-    my_string.replace("%26","&")
-    my_string.replace("&amp","&")
+    #my_string.replace("&amp","&")
     return my_string
 
 @login_required
@@ -36,19 +35,22 @@ def index(request):
 
     #check for correct permission
     if not request.user.has_perm('mysite.psu_ldap'):
+        __logger__.info("attempted app access by user: {0}".format(request.user))
         return render_to_response('invalid.html')
 
     else:
         #check if form submitted
         if not request.method == 'POST':
-            __logger__.info("request: {0}".format(request.path)) #debug
             #if asking for recent, then go to this block
             if request.path == '/recent/':
+                __logger__.info("serving recent page.")
                 recent = 'couldn\'t open the recent file.'
+
+                #we're only showing the last 15 transactions, so this block
+                #makes that happen
                 more_than_15 = False
                 with open('/var/www/psu_ldap/recent.txt','r') as fd:
                     lines = fd.readlines()
-                    #__logger__.info("lines: {0}".format(lines)) #debug
                     recent = ''
                     if (len(lines)>15):
                         early_index = 15
@@ -68,10 +70,12 @@ def index(request):
                         lines.reverse()
                         for i in lines:
                             fd.write(i)
+
                 return HttpResponse("<strong>Most Recent Interactions:</strong><br/><br/>{0}".format(recent))
-            #render blank forms etc.
+
             else:
                 #if form not submitted, ie: no POST, then render the blank form(s)
+                __logger__.info("rendering blank forms.")
                 query_form = LdapQueryForm(initial = {'query_group_name':''})
                 modify_form = LdapModifyForm(initial = {'group_dn':'','modify_group_name':'',
                     'group_preferredcn':'','group_room':'','group_phone':'','group_email':'',
@@ -84,16 +88,18 @@ def index(request):
 
         #if it's the modify form that they submitted it will have this field:
         elif (u'group_phone' in request.POST.keys()):
+            __logger__.info("user: {0}".format(request.user))
             #get the form
             form = LdapModifyForm( request.POST )
 
             #check if form valid
             if not form.is_valid():
+                __logger__.info("invalid form submission")
                 return HttpResponse("form not valid...")
 
             #handle form submission
             else:
-                print("form: {0}".format(form)) #debug
+                __logger__.debug("form: {0}".format(form)) #debug
                 group_dn, group_name, group_preferredcn, group_room, group_phone, group_email, group_labeledUri = modify_process_form(form)
 
             #is there a labeled URI for this entry?
@@ -106,13 +112,12 @@ def index(request):
             for section in dn_split:
                 if section.strip().startswith('cn'):            
                     lookup_cn = section.strip()
-            #print 'lookup_cn: {0}'.format(lookup_cn) #debug
 
             initial_record = (101, [])
             if lookup_cn is not '':
-                lookup_cn = clean_string(lookup_cn)
-                print("lookup_cn: {0}".format(lookup_cn)); #debug
-                initial_record = search(clean_string(lookup_cn), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
+                #lookup_cn = clean_string(lookup_cn)
+                __logger__.info("user:{0}\nlooked up cn: {1}".format(request.user, lookup_cn.replace('(','\(').replace(')','\)'))); #debug
+                initial_record = search(lookup_cn.replace('(','\(').replace(')','\)'), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
 
             #logic to figure out what needs to change
             dn_same = False
@@ -123,7 +128,7 @@ def index(request):
             email_same = False
             uri_same = False
 
-            #print 'initial_record: {0}\ninitial_record == (101, []): {1}'.format(initial_record, (initial_record == (101,[]))) #debug
+            __logger__.debug('initial_record: {0}\ninitial_record == (101, []): {1}'.format(initial_record, (initial_record == (101,[])))) #debug
 
             before_dict = {}
             after_dict  = {}
@@ -132,12 +137,19 @@ def index(request):
                 if group_dn == initial_record[1][0][0]:
                     dn_same = True
 
+                if ',' in group_name:
+                    group_cn_s = group_name.split(",")
+                    for group_cn in group_cn_s:
+                        if group_cn in initial_record[1][0][1]['cn']:
+                            cn_same = True
+
                 if group_name in initial_record[1][0][1]['cn']:
                     cn_same = True
-                else:
-                    before_dict['cn'] = initial_record[1][0][1]['cn']
-                    after_dict['cn']  = process_input(group_name)
+
+                if not cn_same:
+                    __logger__.debug("group_name: {0}\ninitial_record[1][0][1]['cn']: {1}".format(group_name, initial_record[1][0][1]['cn']))
                     rdn_results = modify_rdn(group_dn, 'cn={0}'.format(group_name), my_creds)
+                    __logger__.info("cn changed from {0} to {1}".format(initial_record[1][0][1]['cn'], group_name))
                     group_dn = search('cn={0}'.format(clean_string(group_name)), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)[1][0][0]
 
                 if group_preferredcn in initial_record[1][0][1]['preferredcn']:
@@ -174,14 +186,8 @@ def index(request):
                 except Exception, error:
                     uri_same = True
 
-
-                #return HttpResponse('initial_record: {0}<br/>boos: {1}<br/>troubleshoot:<br/>group_name:{2} initial_record["cn"]:{3}<br/>group_room:{4} initial_record["roomNumber"]{5}<br/>group_phone:{6} initial_record["telephoneNumber"]:{7}'.format(initial_record, (dn_same, cn_same, preferred_cn_same, room_same, phone_same, email_same, uri_same), group_name, initial_record[1][0][1]['cn'], group_room, initial_record[1][0][1]['roomNumber'], group_phone, initial_record[1][0][1]['telephoneNumber'])) #debug
-
-                #return HttpResponse('before_dict: {0}<br/>after_dict: {1}'.format(before_dict, after_dict)) #debug
-                #print 'group_dn: {0}\nbefore_dict: {1}\nafter_dict: {2}\nmy_creds: {3}'.format(group_dn, before_dict, after_dict, my_creds) #debug
-                #return HttpResponse( 'group_dn: {0}<br/>before_dict: {1}<br/>after_dict: {2}<br/>my_creds: {3}'.format(group_dn, before_dict, after_dict, my_creds)) #debug
-  
                 try:
+                    __logger__.info("modifying group with dn= '{0}'\nbefore={1}\nafter={2}".format(group_dn, before_dict, after_dict))
                     results = modify(group_dn,
                     #change from:
                     before_dict,
@@ -196,6 +202,8 @@ def index(request):
                         .format(Exception, error))
 
                 try:
+                    if ',' in group_name:
+                        group_name = group_name.split(',')[0]
                     end_results = search('cn={0}'.format(clean_string(group_name)), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
                     group_dn = end_results[1][0][0]
                     result_dict = end_results[1][0][1]
@@ -223,38 +231,53 @@ def index(request):
 
         #if its the query form that was submitted
         elif (u'query_group_name' in request.POST.keys()):
+            __logger__.info("user: {0}".format(request.user))
             form = LdapQueryForm( request.POST )
+
             #check if form valid
             if not form.is_valid():
                 return HttpResponse("form not valid...")
             #handle form submission
+
             else:
-                #print 'form.data: {0}'.format(form.data)
+                #get form info & log it
+                __logger__.debug('form.data: {0}'.format(form.data))
                 group_name = form.cleaned_data['query_group_name']
-                #print 'searched for: {0}'.format(group_name) #debug
+                __logger__.debug('searched for: {0}'.format(group_name))
+
                 try:
+                    #do the search
                     result = search('cn=*{0}*'.format(clean_string(group_name)),
                         {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
-                    #print 'search result: {0}'.format( result ) #debug
+                    __logger__.debug('search result: {0}'.format(result))
+
+                    #no record found
                     if result == (101, []):
                         result = {'success':'false','no_match':'no matching record for this group name.'}
+
+                    #success case, return the results, formatted in browser
                     else:
-                        result = {'success':'true',"match":result[1]} #str({'match':result[1]})
+                        result = {'success':'true',"match":result[1]}
+
+                    #add a line to the recent transactions file
                     with open('/var/www/psu_ldap/recent.txt','a') as fd:
-                        if (result == {'no_match':'no matching record for this group name.'}): # or (result == 'this group doesn\'t show up in the online directory.'):
+                        if (result == {'no_match':'no matching record for this group name.'}): 
                             fd.write('Queried for: cn={0}<br/>results: {1}\n'.format(group_name, result))
                         else:
                             fd.write('Queried for: cn=*{0}*\n'.format(group_name))
+
+                #handle error
                 except Exception, error:
-                    print 'search error: {0}\n\t{1}'.format(Exception, error)
+                    __logger__.info('search error: {0}\n\t{1}'.format(Exception, error))
                     result = 'search error: {0}\t{1}'.format(Exception, error)
                     with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
                         fd.write(result + '\n')
-                #return HttpResponse('results for: {0}<br/>{1}'.format(group_name, result))
-                print result #debug
+                __logger__.debug("search result: {0}".format(result))
                 return HttpResponse(json.dumps(result), mimetype="application/json")
 
+        #catastrophic error case... bad request/url/etc
         else:
+            __logger__.info("user: {0}".format(request.user))
             with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
                 fd.write('request fell through:\n\t'.format(request.POST))
-            return HttpResponse( 'request fell through:<br/>{0}'.format(request.POST.keys()) )
+            return HttpResponse('request fell through:<br/>{0}'.format(request.POST.keys()))
