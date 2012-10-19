@@ -10,11 +10,22 @@ from support.query_util             import query_process_form
 from support.modify_util            import modify_process_form, process_input
 from python_ldap_stuff.psu_ldap     import *
 
+import json
 import os
 
 #for debug
 import logging
 __logger__ = logging.getLogger(__name__)
+
+def clean_string(my_string):
+    #get parens right
+    my_string.replace("(","\\(").replace(")","\\)")
+    #get ampersand
+    #my_string.replace("&","\\&")
+    #my_string.replace("%26","&")
+    my_string.replace("%26","&")
+    my_string.replace("&amp","&")
+    return my_string
 
 @login_required
 def index(request):
@@ -79,8 +90,10 @@ def index(request):
             #check if form valid
             if not form.is_valid():
                 return HttpResponse("form not valid...")
+
             #handle form submission
             else:
+                print("form: {0}".format(form)) #debug
                 group_dn, group_name, group_preferredcn, group_room, group_phone, group_email, group_labeledUri = modify_process_form(form)
 
             #is there a labeled URI for this entry?
@@ -97,7 +110,9 @@ def index(request):
 
             initial_record = (101, [])
             if lookup_cn is not '':
-                initial_record = search(lookup_cn, {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
+                lookup_cn = clean_string(lookup_cn)
+                print("lookup_cn: {0}".format(lookup_cn)); #debug
+                initial_record = search(clean_string(lookup_cn), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
 
             #logic to figure out what needs to change
             dn_same = False
@@ -123,7 +138,7 @@ def index(request):
                     before_dict['cn'] = initial_record[1][0][1]['cn']
                     after_dict['cn']  = process_input(group_name)
                     rdn_results = modify_rdn(group_dn, 'cn={0}'.format(group_name), my_creds)
-                    group_dn = search('cn={0}'.format(group_name), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)[1][0][0]
+                    group_dn = search('cn={0}'.format(clean_string(group_name)), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)[1][0][0]
 
                 if group_preferredcn in initial_record[1][0][1]['preferredcn']:
                     preferred_cn_same = True
@@ -181,13 +196,13 @@ def index(request):
                         .format(Exception, error))
 
                 try:
-                    end_results = search('cn={0}'.format(group_name), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
+                    end_results = search('cn={0}'.format(clean_string(group_name)), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
                     group_dn = end_results[1][0][0]
                     result_dict = end_results[1][0][1]
                 except Exception, error:
                     with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
                         fd.write('error fetching record for cn={0}\n'.format(group_name))
-                    return HttpResponse('error fetching record for cn={0}'.format(group_name))
+                    return HttpResponse('error fetching record for cn={0}<br/>{1}: {2}'.format(group_name, str(Exception), error))
 
                 try:
                     with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
@@ -202,7 +217,7 @@ def index(request):
                     return HttpResponse('results:<br/>dn: {0}<br/>cn: {1}<br/>preferredcn: {2}<br/>room: {3}<br/>phone: {4}<br/>email: {5}'.format(group_dn, result_dict['cn'], result_dict['preferredcn'], result_dict['roomNumber'], result_dict['telephoneNumber'], result_dict['mail']))
             else:
                 with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
-                    fd.write("FAILED: attempted to modify: {0}. dn='{}' not an existing record\n".format(group_dn, after_dict))
+                    fd.write("FAILED: attempted to modify: {0}. No matching record\n".format(group_dn, after_dict))
                 return HttpResponse('dn="{0}" is not an existing record'.format(group_dn))
 
 
@@ -218,42 +233,26 @@ def index(request):
                 group_name = form.cleaned_data['query_group_name']
                 #print 'searched for: {0}'.format(group_name) #debug
                 try:
-                    result = search('cn={0}'.format(group_name),
+                    result = search('cn=*{0}*'.format(clean_string(group_name)),
                         {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
                     #print 'search result: {0}'.format( result ) #debug
                     if result == (101, []):
-                        result = 'no matching record for this group name.'
+                        result = {'success':'false','no_match':'no matching record for this group name.'}
                     else:
-                        this_dn = result[1][0][0]
-                        result = result[1][0][1]
-                        if 'no' in result['psupublish']:
-                            result = 'this group doesn\'t show up in the online directory.'
-                        else: #if 'labeledUri' in result.keys():
-                            _result = 'dn: {0}'.format(this_dn)
-                            for key in result.keys():
-                                _result += "<br/>{0}: {1}".format(key, result[key])
-                            '''result = \
-                                'dn: {0}<br/>cn: {1}<br/>preferredcn: {2}<br/>roomNumber: {3}<br/>telephoneNumber: {4},<br/>mail: {5}<br/>labeledUri: {6}'\
-                                .format(this_dn, result['cn'], result['preferredcn'],
-                                result['roomNumber'], result['telephoneNumber'], result['mail'],
-                                result['labeledUri'])'''
-                            result = _result
-                        '''else:
-                            result = \
-                                'dn: {0}<br/>cn: {1}<br/>preferredcn: {2}<br/>roomNumber: {3}<br/>telephoneNumber: {4},<br/>mail: {5}'\
-                                .format(this_dn, result['cn'], result['preferredcn'],
-                                result['roomNumber'], result['telephoneNumber'], result['mail'])'''
+                        result = {'success':'true',"match":result[1]} #str({'match':result[1]})
                     with open('/var/www/psu_ldap/recent.txt','a') as fd:
-                        if (result == 'no matching record for this group name.') or (result == 'this group doesn\'t show up in the online directory.'):
+                        if (result == {'no_match':'no matching record for this group name.'}): # or (result == 'this group doesn\'t show up in the online directory.'):
                             fd.write('Queried for: cn={0}<br/>results: {1}\n'.format(group_name, result))
                         else:
-                            fd.write('Queried for: cn={0}\n'.format(this_dn))
+                            fd.write('Queried for: cn=*{0}*\n'.format(group_name))
                 except Exception, error:
                     print 'search error: {0}\n\t{1}'.format(Exception, error)
-                    result = 'search error: {0}\t{1}<br/>{2}'.format(Exception, error)
+                    result = 'search error: {0}\t{1}'.format(Exception, error)
                     with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
                         fd.write(result + '\n')
-                return HttpResponse('results for: {0}<br/>{1}'.format(group_name, result))
+                #return HttpResponse('results for: {0}<br/>{1}'.format(group_name, result))
+                print result #debug
+                return HttpResponse(json.dumps(result), mimetype="application/json")
 
         else:
             with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
