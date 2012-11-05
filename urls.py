@@ -5,6 +5,7 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     url(r'^recent/$', include('mysite.urls')),
+    url(r'^query_form/$', include('mysite.urls')),
     url(r'^query/$', include('mysite.urls')),
     url(r'^modify/$', include('mysite.urls')),
     url(r'^$', include('mysite.urls')),

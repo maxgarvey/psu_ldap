@@ -7,7 +7,7 @@
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}layout.css" />
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}ldap_style.css"  />
   <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
-  <script src="{{STATIC_URL}}recent.js"></script>
+  <script src="{{STATIC_URL}}query_results_logic.js"></script>
   <title>PSU LDAP Edit</title>
   <meta charset="utf-8">
  </head>
@@ -56,11 +56,59 @@
         <div id="div_header">
          <a href="/"><h1 id="recent_view" class="app_nav_li">LDAP Utility</h1></a>
 
-        <div id="recent">
+        <div id="modify">
          <div id="form_div">
-          <p></p>
-         </div>
-        </div>
+          <form id="modify_form" action='/modify/' method='post'>
+           {% csrf_token %}
+           {{ modify_form.non_field_errors }}
+           <!-- {{ modify_form.group_dn }} -->
+            
+           <label for="group_dn">Group DN</label>
+           <br/>
+           <div id="group_dn_div">
+            {{ modify_form.group_dn }}
+           </div>
+           <span id="dn_display"></span>
+           <br/>
+           <label for="group_name">Group Name (cn)</label>
+           <br/>
+           {{ modify_form.modify_group_name }}
+           <br/>
+           <label for="group_preferredcn">Group Preferredcn</label>
+           <br/>
+           {{ modify_form.group_preferredcn }}
+           <br/>
+           <label for="group_room">Room</label>
+           <br/>
+           {{ modify_form.group_room }}
+           <br/>
+           <label for="group_phone">Phone</label>
+           <br/>
+           {{ modify_form.group_phone }}
+           <br/>
+           <label for="group_email">Email</label>
+           <br/>
+           {{ modify_form.group_email }}
+           <br/>
+           <div id="labeledUri_div">
+            <label for="group_labeledUri">labeledUri</label>
+            <br/>
+            {{ modify_form.group_labeledUri }}
+            <br/>
+           </div>
+           <br/>
+           <input type="submit" id="modify_submit" value="submit" class="submit_button">
+           <input type="button" id="modify_cancel" value="cancel" class="submit_button">
+           </input><!-- group_submit -->
+          </form>
+         </div><!-- form_div -->
+        </div><!-- modify -->
+
+        <div id="success">
+         <div id="form_div">
+          {{ result }}
+         </div><!-- form_div -->
+        </div><!-- success  -->
 
          </div><!-- div_header -->
         </div><!-- waiting -->

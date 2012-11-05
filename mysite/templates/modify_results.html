@@ -7,7 +7,7 @@
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}layout.css" />
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}ldap_style.css"  />
   <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
-  <script src="{{STATIC_URL}}recent.js"></script>
+  <script src="{{STATIC_URL}}modify_results_logic.js"></script>
   <title>PSU LDAP Edit</title>
   <meta charset="utf-8">
  </head>
@@ -56,11 +56,11 @@
         <div id="div_header">
          <a href="/"><h1 id="recent_view" class="app_nav_li">LDAP Utility</h1></a>
 
-        <div id="recent">
+        <div id="success">
          <div id="form_div">
-          <p></p>
-         </div>
-        </div>
+          {{ result }}
+         </div><!-- form_div -->
+        </div><!-- success  -->
 
          </div><!-- div_header -->
         </div><!-- waiting -->

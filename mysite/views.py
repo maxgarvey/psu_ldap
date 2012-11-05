@@ -13,18 +13,8 @@ from python_ldap_stuff.psu_ldap     import *
 import json
 import os
 
-#for debug
 import logging
-__logger__ = logging.getLogger(__name__)
-
-#helper function for processing form input
-def clean_string(my_string):
-    #get parens right
-    my_string = my_string.replace('(','\(').replace(')','\)')
-    #get ampersand
-    #my_string.replace("%26","&")
-    #my_string.replace("&amp","&")
-    return my_string
+logger = logging.getLogger(__name__)
 
 @login_required
 def index(request):
@@ -35,7 +25,7 @@ def index(request):
 
     #check for correct permission
     if not request.user.has_perm('mysite.psu_ldap'):
-        __logger__.info("attempted app access by user: {0}".format(request.user))
+        logger.info("user=\"{0}\" action=\"attempted app access by user. Improper permissions.\"".format(request.user))
         return render_to_response('invalid.html')
 
     else:
@@ -43,63 +33,45 @@ def index(request):
         if not request.method == 'POST':
             #if asking for recent, then go to this block
             if request.path == '/recent/':
-                __logger__.info("serving recent page.")
-                recent = 'couldn\'t open the recent file.'
-
-                #we're only showing the last 15 transactions, so this block
-                #makes that happen
-                more_than_15 = False
-                with open('/var/www/psu_ldap/recent.txt','r') as fd:
-                    lines = fd.readlines()
-                    recent = ''
-                    if (len(lines)>15):
-                        early_index = 15
-                        more_than_15 = True
-                    else:
-                        early_index = len(lines)
-                    early_index = (early_index*(-1))
-                    lines = lines[early_index:]
-                    lines.reverse()
-                    for i in lines:
-                        try:
-                            recent += i.replace('\n','<br/>')
-                        except:
-                            break
-                if more_than_15:
-                    with open('/var/www/psu_ldap/recent.txt','w') as fd:
-                        lines.reverse()
-                        for i in lines:
-                            fd.write(i)
-
-                return HttpResponse("<strong>Most Recent Interactions:</strong><br/><br/>{0}".format(recent))
-
-            else:
-                #if form not submitted, ie: no POST, then render the blank form(s)
-                __logger__.info("rendering blank forms.")
-                query_form = LdapQueryForm(initial = {'query_group_name':''})
-                modify_form = LdapModifyForm(initial = {'group_dn':'','modify_group_name':'',
-                    'group_preferredcn':'','group_room':'','group_phone':'','group_email':'',
-                    'group_labeledUri':''})
-                template = loader.get_template( 'index.html' )
+                #logger.info("user=\"{0} action=\"accessed app.\"")
+                template = loader.get_template( 'recent.html' )
                 context = Context()
-                return render_to_response( 'index.html',
-                        { 'query_form':query_form, 'modify_form':modify_form },
+                return render_to_response( 'recent.html',
+                        { },
                         context_instance=RequestContext(request)  )
 
+            elif request.path == '/query_form/':
+                #if form not submitted, ie: no POST, then render the blank form(s)
+                #logger.info("rendering blank query form.")
+                query_form = LdapQueryForm(initial = {'query_group_name':''})
+                template = loader.get_template( 'query.html' )
+                context = Context()
+                return render_to_response( 'query.html',
+                        { 'query_form':query_form },
+                        context_instance=RequestContext(request)  )
+
+            else:
+                return render_to_response( 'index.html',
+                    {}, context_instance=RequestContext(request)  )
+
         #if it's the modify form that they submitted it will have this field:
-        elif (u'group_phone' in request.POST.keys()):
-            __logger__.info("user: {0}".format(request.user))
+        elif (request.path == '/modify/'):
+            #logger.info("user: {0}".format(request.user))
             #get the form
             form = LdapModifyForm( request.POST )
 
             #check if form valid
             if not form.is_valid():
-                __logger__.info("invalid form submission")
-                return HttpResponse("form not valid...")
+                logger.info("user=\"{0}\" action=\"invalid modify form submission\" form=\"{1}\"".format(request.user, form))
+                template = loader.get_template( 'modify_results.html' )
+                context = Context()
+                return render_to_response( 'modify_results.html',
+                        { result:"form not valid..." }, 
+                        context_instance=RequestContext(request)  )
 
             #handle form submission
             else:
-                __logger__.debug("form: {0}".format(form)) #debug
+                #logger.debug("form: {0}".format(form)) #debug
                 group_dn, group_name, group_preferredcn, group_room, group_phone, group_email, group_labeledUri = modify_process_form(form)
 
             #is there a labeled URI for this entry?
@@ -115,9 +87,10 @@ def index(request):
 
             initial_record = (101, [])
             if lookup_cn is not '':
-                #lookup_cn = clean_string(lookup_cn)
-                __logger__.info("user:{0}\nlooked up cn: {1}".format(request.user, lookup_cn.replace('(','\(').replace(')','\)'))); #debug
-                initial_record = search(lookup_cn.replace('(','\(').replace(')','\)'), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
+                #logger.info("user:{0}\nlooked up cn: {1}".format(request.user, lookup_cn.replace('(','\(').replace(')','\)'))); #debug
+                #initial_record = search(lookup_cn.replace('(','\(').replace(')','\)'), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
+                #logger.info("user:{0}\nlooked up cn: {1}".format(request.user, lookup_cn)); #debug
+                initial_record = search(lookup_cn.replace("(","*").replace(")","*"), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
 
             #logic to figure out what needs to change
             dn_same = False
@@ -128,7 +101,7 @@ def index(request):
             email_same = False
             uri_same = False
 
-            __logger__.debug('initial_record: {0}\ninitial_record == (101, []): {1}'.format(initial_record, (initial_record == (101,[])))) #debug
+            #logger.debug('initial_record: {0}\ninitial_record == (101, []): {1}'.format(initial_record, (initial_record == (101,[])))) #debug
 
             before_dict = {}
             after_dict  = {}
@@ -147,34 +120,56 @@ def index(request):
                     cn_same = True
 
                 if not cn_same:
-                    __logger__.debug("group_name: {0}\ninitial_record[1][0][1]['cn']: {1}".format(group_name, initial_record[1][0][1]['cn']))
+                    #logger.debug("group_name: {0}\ninitial_record[1][0][1]['cn']: {1}".format(group_name, initial_record[1][0][1]['cn']))
+ 
                     rdn_results = modify_rdn(group_dn, 'cn={0}'.format(group_name), my_creds)
-                    __logger__.info("cn changed from {0} to {1}".format(initial_record[1][0][1]['cn'], group_name))
-                    group_dn = search('cn={0}'.format(clean_string(group_name)), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)[1][0][0]
+                    #logger.info("cn changed from {0} to {1}".format(initial_record[1][0][1]['cn'], group_name))
+                    group_dn = search('cn={0}'.format(group_name.replace("(","*").replace(")","*")), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)[1][0][0]
 
-                if group_preferredcn in initial_record[1][0][1]['preferredcn']:
+                if 'preferredcn' in initial_record[1][0][1].keys():
+                    if group_preferredcn in initial_record[1][0][1]['preferredcn']:
+                        preferred_cn_same = True
+                    else:
+                        before_dict['preferredcn'] = initial_record[1][0][1]['preferredcn']
+                        after_dict['preferredcn']  = process_input(group_preferredcn)
+                elif group_preferredcn is not '':
+                    after_dict['preferredcn'] = process_input(group_preferredcn)
+                else:
                     preferred_cn_same = True
+
+                if 'roomNumber' in initial_record[1][0][1].keys():
+                    if group_room in initial_record[1][0][1]['roomNumber']:
+                        room_same = True
+                    else:
+                        before_dict['roomNumber'] = initial_record[1][0][1]['roomNumber']
+                        after_dict['roomNumber']  = process_input(group_room)
+                elif group_room is not '':
+                    after_dict['roomNumber'] = process_input(group_room)
                 else:
-                    before_dict['preferredcn'] = initial_record[1][0][1]['preferredcn']
-                    after_dict['preferredcn']  = process_input(group_preferredcn)
-                    
-                if group_room in initial_record[1][0][1]['roomNumber']:
                     room_same = True
-                else:
-                    before_dict['roomNumber'] = initial_record[1][0][1]['roomNumber']
-                    after_dict['roomNumber']  = process_input(group_room)
 
-                if group_phone in initial_record[1][0][1]['telephoneNumber']:
+                if 'telephoneNumber' in initial_record[1][0][1].keys():
+                    if group_phone in initial_record[1][0][1]['telephoneNumber']:
+                        phone_same = True
+                    else:
+                        before_dict['telephoneNumber'] = initial_record[1][0][1]['telephoneNumber']
+                        after_dict['telephoneNumber']  = process_input(group_phone)
+                elif group_phone is not '':
+                    after_dict['telephoneNumber'] = process_input(group_phone)
+                else:
                     phone_same = True
-                else:
-                    before_dict['telephoneNumber'] = initial_record[1][0][1]['telephoneNumber']
-                    after_dict['telephoneNumber']  = process_input(group_phone)
 
-                if group_email in initial_record[1][0][1]['mail']:
-                    email_same = True
+                if 'mail' in initial_record[1][0][1].keys():
+                    if group_email in initial_record[1][0][1]['mail']:
+                        email_same = True
+                    else:
+                        before_dict['mail'] = initial_record[1][0][1]['mail']
+                        after_dict['mail']  = process_input(group_email)
+                elif group_email is not '':
+                    after_dict['mail'] = process_input(group_email)
                 else:
-                    before_dict['mail'] = initial_record[1][0][1]['mail']
-                    after_dict['mail']  = process_input(group_email)
+                    email_same = True
+
                 try:
                     if group_labeledUri in initial_record[1][0][1]['labeledUri']:
                         uri_same = True
@@ -186,70 +181,117 @@ def index(request):
                 except Exception, error:
                     uri_same = True
 
-                try:
-                    __logger__.info("modifying group with dn= '{0}'\nbefore={1}\nafter={2}".format(group_dn, before_dict, after_dict))
-                    results = modify(group_dn,
-                    #change from:
-                    before_dict,
-                    #change to:
-                    after_dict,
-                    my_creds)
-                except Exception, error:
-                    with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
-                        fd.write('there was an error during modify for {0}: {1}\n'\
-                        .format(Exception, error))
-                    return HttpResponse('there was an error during modify\n\n{0}\n\n{1}'\
-                        .format(Exception, error))
+                if after_dict.keys() != []:
+                    try:
+                        #logger.info("modifying group with dn= '{0}'\nbefore={1}\nafter={2}".format(group_dn, before_dict, after_dict))
+                        results = modify(group_dn,
+                        #change from:
+                        before_dict,
+                        #change to:
+                        after_dict,
+                        my_creds)
+                    except Exception, error:
+                        logger.info("user=\"{0}\" action=\"Error modifying: {1} to: {2}\" error=\"{3}\"".format(request.user, before_dict, after_dict, error))
+                        template = loader.get_template( 'modify_results.html' )
+                        context = Context()
+                        return render_to_response( 'modify_results.html',
+                                { "result":"there was an error during modify for {0}: {1} {2}".format(Exception, error, after_dict.keys())},
+                                context_instance=RequestContext(request)  )
+
+                elif not cn_same:
+                    logger.info("user=\"{0}\" action=\"changed cn for group: {1} to: {2}\"".format(request.user, group_dn, group_name))
+                    template = loader.get_template( 'modify_results.html' )
+                    context = Context()
+                    return render_to_response( 'modify_results.html',
+                            { "result":"Modified group\'s cn." },
+                            context_instance=RequestContext(request)  )
+
+                else:
+                    logger.info("user=\"{0}\" action=\"attempted to modify with no changes\"".format(request.user))
+                    template = loader.get_template( 'modify_results.html' )
+                    context = Context()
+                    return render_to_response( 'modify_results.html',
+                            { "result":"No changes specified." },
+                            context_instance=RequestContext(request)  )
 
                 try:
                     if ',' in group_name:
                         group_name = group_name.split(',')[0]
-                    end_results = search('cn={0}'.format(clean_string(group_name)), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
+                    #end_results = search('cn={0}'.format(clean_string(group_name)), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
+                    #logger.info("search_term: {0}".format('cn={0}'.format(group_name.replace("(","*").replace(")","*")))) #debug
+                    end_results = search('cn={0}'.format(group_name.replace("(","*").replace(")","*")), {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
                     group_dn = end_results[1][0][0]
                     result_dict = end_results[1][0][1]
                 except Exception, error:
-                    with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
-                        fd.write('error fetching record for cn={0}\n'.format(group_name))
-                    return HttpResponse('error fetching record for cn={0}<br/>{1}: {2}'.format(group_name, str(Exception), error))
+                    logger.info("user=\"{0}\" action=\"error fetching record for cn: {1}\" error=\"{2}\"".format(request.user, group_name, error))
+                    template = loader.get_template( 'modify_results.html' )
+                    context = Context()
+                    return render_to_response( 'modify_results.html',
+                            { 'result':'Error fetching record for cn={0}<br/>{1}: {2}'.format(group_name, str(Exception), error) },
+                            context_instance=RequestContext(request)  )
+
 
                 try:
-                    with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
-                        fd.write("modified: {0} to have: {1}\n".format(group_dn, after_dict))
                     if 'labeledUri' in result_dict.keys():
-                        return HttpResponse('results:<br/>dn: {0}<br/>cn: {1}<br/>preferredcn: {2}<br/>room: {3}<br/>phone: {4}<br/>email: {5}<br/>labeledUri: {6}'.format(group_dn, result_dict['cn'], result_dict['preferredcn'], result_dict['roomNumber'], result_dict['telephoneNumber'], result_dict['mail'], result_dict['labeledUri']))
+                        logger.info("user=\"{0}\" action=\"modified: {1} to: {2}\"".format(request.user, group_name, result_dict))
+                        template = loader.get_template( 'modify_results.html' )
+                        context = Context()
+                        return render_to_response( 'modify_results.html',
+                                { 'result':json.dumps({'dn':group_dn, 'cn':result_dict['cn'], 'preferredcn':result_dict['preferredcn'], 'room':result_dict['roomNumber'], 'phone':result_dict['telephoneNumber'], 'email':result_dict['mail'], 'labeledUri':result_dict['labeledUri'], 'success':True}) },
+                                context_instance=RequestContext(request)  )
+
                     else:
-                        return HttpResponse('results:<br/>dn: {0}<br/>cn: {1}<br/>preferredcn: {2}<br/>room: {3}<br/>phone: {4}<br/>email: {5}'.format(group_dn, result_dict['cn'], result_dict['preferredcn'], result_dict['roomNumber'], result_dict['telephoneNumber'], result_dict['mail'])) 
+                        logger.info("user=\"{0}\" action=\"modified: {1} to: {2}\"".format(request.user, group_name, result_dict))
+                        template = loader.get_template( 'modify_results.html' )
+                        context = Context()
+                        return render_to_response( 'modify_results.html',
+                                { 'result':json.dumps({'dn':group_dn, 'cn':result_dict['cn'], 'preferredcn':result_dict['preferredcn'], 'room':result_dict['roomNumber'], 'phone':result_dict['telephoneNumber'], 'email':result_dict['mail'], 'success':True}) },
+                                context_instance=RequestContext(request)  )
+ 
                 except Exception, error:
-                    with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
-                        fd.write("Attempted to modify: {0} to have: {1}, but there was a {2}: {3}\n".format(group_dn, after_dict, Exception, error))
-                    return HttpResponse('results:<br/>dn: {0}<br/>cn: {1}<br/>preferredcn: {2}<br/>room: {3}<br/>phone: {4}<br/>email: {5}'.format(group_dn, result_dict['cn'], result_dict['preferredcn'], result_dict['roomNumber'], result_dict['telephoneNumber'], result_dict['mail']))
+                    logger.info("user=\"{0}\" action=\"modified: {1} to: {2}\" error=\"\"".format(request.user, group_name, result_dict, error))
+                    template = loader.get_template( 'modify_results.html' )
+                    context = Context()
+                    return render_to_response( 'modify_results.html',
+                            { 'result':json.dumps({'dn':group_dn, 'cn':result_dict['cn'], 'preferredcn':result_dict['preferredcn'], 'room':result_dict['roomNumber'], 'phone':result_dict['telephoneNumber'], 'email':result_dict['mail'], 'success':True}) },
+                            context_instance=RequestContext(request)  )
+
             else:
-                with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
-                    fd.write("FAILED: attempted to modify: {0}. No matching record\n".format(group_dn, after_dict))
-                return HttpResponse('dn="{0}" is not an existing record'.format(group_dn))
+                logger.info("user=\"{0}\" action=\"No existing record for: {1}\"".format(request.user, group_dn))
+                template = loader.get_template( 'modify_results.html' )
+                context = Context()
+                return render_to_response( 'modify_results.html',
+                    { 'result':json.dumps({'success':False, 'message':'dn="{0}" is not an existing record'.format(group_dn)}) },
+                    context_instance=RequestContext(request)  )
 
+        elif (request.path == '/query/'):
 
-        #if its the query form that was submitted
-        elif (u'query_group_name' in request.POST.keys()):
-            __logger__.info("user: {0}".format(request.user))
+            #logger.info("user: {0}".format(request.user))
             form = LdapQueryForm( request.POST )
 
             #check if form valid
             if not form.is_valid():
-                return HttpResponse("form not valid...")
-            #handle form submission
+                logger.info("user=\"{0}\" action=\"submitted invalid query form: {1}\"".format(request.user, form))
+                template = loader.get_template( 'modify_results.html' )
+                context = Context()
+                return render_to_response( 'modify_results.html',
+                    { "result":"form not valid..." },
+                    context_instance=RequestContext(request)  )
 
+            #handle form submission
             else:
                 #get form info & log it
-                __logger__.debug('form.data: {0}'.format(form.data))
+                #logger.debug('form.data: {0}'.format(form.data))
                 group_name = form.cleaned_data['query_group_name']
-                __logger__.debug('searched for: {0}'.format(group_name))
+                #logger.debug('searched for: {0}'.format(group_name))
+
 
                 try:
                     #do the search
-                    result = search('cn=*{0}*'.format(clean_string(group_name)),
+                    #result = search('cn=*{0}*'.format(clean_string(group_name)),
+                    result = search(('cn=*{0}*'.format(group_name.replace("(","*").replace(")","*"))).replace("**","*"),
                         {'basedn':'ou=groups,dc=pdx,dc=edu'}, my_creds)
-                    __logger__.debug('search result: {0}'.format(result))
+                    #logger.debug('search result: {0}'.format(result))
 
                     #no record found
                     if result == (101, []):
@@ -259,25 +301,24 @@ def index(request):
                     else:
                         result = {'success':'true',"match":result[1]}
 
-                    #add a line to the recent transactions file
-                    with open('/var/www/psu_ldap/recent.txt','a') as fd:
-                        if (result == {'no_match':'no matching record for this group name.'}): 
-                            fd.write('Queried for: cn={0}<br/>results: {1}\n'.format(group_name, result))
-                        else:
-                            fd.write('Queried for: cn=*{0}*\n'.format(group_name))
-
                 #handle error
                 except Exception, error:
-                    __logger__.info('search error: {0}\n\t{1}'.format(Exception, error))
+                    #logger.info('search error: {0}\n\t{1}'.format(Exception, error))
                     result = 'search error: {0}\t{1}'.format(Exception, error)
-                    with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
-                        fd.write(result + '\n')
-                __logger__.debug("search result: {0}".format(result))
-                return HttpResponse(json.dumps(result), mimetype="application/json")
+                #logger.debug("search result: {0}".format(result))
+
+                modify_form = LdapModifyForm(initial = {'group_dn':'','modify_group_name':'',
+                    'group_preferredcn':'','group_room':'','group_phone':'','group_email':'',
+                    'group_labeledUri':''})
+                logger.info("user=\"{0}\" action=\"queried for {1}\"".format(request.user, group_name))
+                template = loader.get_template( 'query_results.html' )
+                context = Context()
+                return render_to_response( 'query_results.html',
+                        { 'modify_form':modify_form, 'result':json.dumps(result) },
+                        context_instance=RequestContext(request)  )
+
 
         #catastrophic error case... bad request/url/etc
         else:
-            __logger__.info("user: {0}".format(request.user))
-            with open('/var/www/psu_ldap/recent.txt', 'a') as fd:
-                fd.write('request fell through:\n\t'.format(request.POST))
+            logger.info("user=\"{0}\" action=\"bad request\"".format(request.user))
             return HttpResponse('request fell through:<br/>{0}'.format(request.POST.keys()))

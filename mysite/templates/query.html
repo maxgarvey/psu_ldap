@@ -6,8 +6,6 @@
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}reset.css"  />
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}layout.css" />
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}ldap_style.css"  />
-  <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
-  <script src="{{STATIC_URL}}recent.js"></script>
   <title>PSU LDAP Edit</title>
   <meta charset="utf-8">
  </head>
@@ -37,11 +35,11 @@
    <div id="main-wrap">
     <div id="main">
      <ul id="navigation">
-      <li class=""><a href="http://www.pdx.edu/admissions" title="">Admissions</a></li> 
-      <li class=""><a href="http://www.pdx.edu/schools-colleges">Schools &amp; Colleges</a></li> 
-      <li class=""><a href="http://www.pdx.edu/academic-programs" class="active-trail active">Academic Programs</a></li> 
+      <li class=""><a href="http://www.pdx.edu/admissions" title="">Admissions</a></li>
+      <li class=""><a href="http://www.pdx.edu/schools-colleges">Schools &amp; Colleges</a></li>
+      <li class=""><a href="http://www.pdx.edu/academic-programs" class="active-trail active">Academic Programs</a></li>
       <li class=""><a href="http://www.pdx.edu/campus">Campus</a></li>
-      <li class="last"><a href="http://www.pdx.edu/alumni">Alumni</a></li> 
+      <li class="last"><a href="http://www.pdx.edu/alumni">Alumni</a></li>
       </ul>
       <div id="container">
        <div id="outer">
@@ -56,14 +54,20 @@
         <div id="div_header">
          <a href="/"><h1 id="recent_view" class="app_nav_li">LDAP Utility</h1></a>
 
-        <div id="recent">
+        <div id="query">
          <div id="form_div">
-          <p></p>
-         </div>
-        </div>
-
-         </div><!-- div_header -->
-        </div><!-- waiting -->
+          <form id="query_form" action='/query/' method='post'>
+           {% csrf_token %}
+           {{ query_form.non_field_errors }}
+           <label for="group_name">Group Name</label>
+           <br/>
+           {{ query_form.query_group_name }}
+           <br/><br/>
+           <input type="submit" id="query_submit" value="submit" class="submit_button">
+           </input><!-- query_submit -->
+          </form><!-- query_form  -->
+         </div><!-- form_div -->
+        </div><!-- query -->
        </div><!-- outer -->
       </div><!-- conainer -->
      </div><!-- main -->

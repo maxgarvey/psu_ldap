@@ -11,6 +11,10 @@ from django_cas.models import User
 
 __all__ = ['CASBackend']
 
+supports_object_permissions = False
+supports_anonymous_user = False
+supports_inactive_user = False
+
 def _verify_cas1(ticket, service):
     """Verifies CAS 1.0 authentication ticket.
 
@@ -67,6 +71,9 @@ _verify = _PROTOCOLS[settings.CAS_VERSION]
 
 class CASBackend(object):
     """CAS authentication backend"""
+    supports_object_permissions = False
+    supports_anonymous_user = False
+    supports_inactive_user = False
 
     def authenticate(self, ticket, service):
         """Verifies CAS ticket and gets or creates User object"""

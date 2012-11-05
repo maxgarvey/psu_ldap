@@ -7,7 +7,7 @@
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}layout.css" />
   <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}ldap_style.css"  />
   <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
-  <script src="{{STATIC_URL}}recent.js"></script>
+  <script src="{{STATIC_URL}}logic.js"></script>
   <title>PSU LDAP Edit</title>
   <meta charset="utf-8">
  </head>
@@ -37,33 +37,71 @@
    <div id="main-wrap">
     <div id="main">
      <ul id="navigation">
-      <li class=""><a href="http://www.pdx.edu/admissions" title="">Admissions</a></li> 
-      <li class=""><a href="http://www.pdx.edu/schools-colleges">Schools &amp; Colleges</a></li> 
-      <li class=""><a href="http://www.pdx.edu/academic-programs" class="active-trail active">Academic Programs</a></li> 
+      <li class=""><a href="http://www.pdx.edu/admissions" title="">Admissions</a></li>
+      <li class=""><a href="http://www.pdx.edu/schools-colleges">Schools &amp; Colleges</a></li>
+      <li class=""><a href="http://www.pdx.edu/academic-programs" class="active-trail active">Academic Programs</a></li>
       <li class=""><a href="http://www.pdx.edu/campus">Campus</a></li>
-      <li class="last"><a href="http://www.pdx.edu/alumni">Alumni</a></li> 
+      <li class="last"><a href="http://www.pdx.edu/alumni">Alumni</a></li>
       </ul>
       <div id="container">
        <div id="outer">
 
         <div id="nav_left">
          <ul id="l_nav"><br/><br/>
-          <a href="/query_form/"><li id='l_nav_query' class="app_nav_li">Query</li></a><br/><br/>
+          <li id='l_nav_query' class="app_nav_li">Query</li><br/><br/>
           <li id='l_nav_logout' class="app_nav_li"><a href="/accounts/logout">Logout</a></li>
          </ul>
         </div>
 
         <div id="div_header">
-         <a href="/"><h1 id="recent_view" class="app_nav_li">LDAP Utility</h1></a>
+         <h1 id="recent_view" class="app_nav_li">LDAP Utility</h1>
 
-        <div id="recent">
+        <div id="modify">
          <div id="form_div">
-          <p></p>
-         </div>
-        </div>
+          <form id="modify_form" action='/modify/' method='post'>
+           {% csrf_token %}
+           {{ modify_form.non_field_errors }}
+           <!-- {{ modify_form.group_dn }} -->
 
-         </div><!-- div_header -->
-        </div><!-- waiting -->
+           <label for="group_dn">Group DN</label>
+           <br/>
+           <span id="dn_display"></span>
+           <br/>
+           <label for="group_name">Group Name (cn)</label>
+           <br/>
+           {{ modify_form.modify_group_name }}
+           <br/>
+           <label for="group_preferredcn">Group Preferredcn</label>
+           <br/>
+           {{ modify_form.group_preferredcn }}
+           <br/>
+           <label for="group_room">Room</label>
+           <br/>
+           {{ modify_form.group_room }}
+           <br/>
+           <label for="group_phone">Phone</label>
+           <br/>
+           {{ modify_form.group_phone }}
+           <br/>
+           <label for="group_email">Email</label>
+           <br/>
+           {{ modify_form.group_email }}
+           <br/>
+           <div id="labeledUri_div">
+            <label for="group_labeledUri">labeledUri</label>
+            <br/>
+            {{ modify_form.group_labeledUri }}
+            <br/>
+           </div>
+           <br/>
+           <input type="button" id="modify_submit" value="submit" class="submit_button">
+           <input type="button" id="modify_cancel" value="cancel" class="submit_button">
+           </input><!-- group_submit -->
+          </form>
+         </div><!-- form_div -->
+        </div><!-- modify -->
+
+
        </div><!-- outer -->
       </div><!-- conainer -->
      </div><!-- main -->
