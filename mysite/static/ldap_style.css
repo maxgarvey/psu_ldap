@@ -1,0 +1,140 @@
+body {
+  background: #ebebf2;
+}
+
+button {
+  cursor: hand;
+  cursor: pointer;
+}
+
+dt {
+  font-size: 12px;
+  color: #663a16;
+  font-weight: bold;
+}
+
+#outer {
+  width:                  100%;
+  margin-top:              0px;
+  padding-top:            20px;
+  font-family:      sans-serif;
+  background-color:    #ebebf2;
+  border-color:        #ebebf2;
+}
+
+#nav_left {
+  float: left;
+  width: 190px;
+  padding: 20px;
+  margin-left: 20px;
+  height:722px;
+}
+
+#l_nav {
+  list-style-type: none;
+}
+
+.inner {
+  margin-left: 255px;
+}
+
+#ldap_header {
+  margin-left:           0%;
+  margin-right:          0%;
+  margin-top:            0%;
+  margin-bottom:         0%;
+  width:               100%;
+  background-color: #ebebf2;
+}
+
+#form_div {
+  margin-left:     40px;
+  margin-right:    40px;
+  margin-top:         0;
+  margin-bottom:      0;
+  width:          600px;
+  padding-bottom:  50px;
+  word-wrap: break-word;
+}
+
+#response_div {
+  margin-left:    40px;
+  margin-right:   40px;
+  margin-top:     20px;
+  margin-bottom:  20px;
+  width:         420px;
+  height:        440px;
+  padding:        30px;
+}
+
+#navbar {
+  list-style-type:     none;
+  float:            inherit;
+  position:        relative;
+}
+
+#main_fl_left {
+  float: left;
+}
+
+.app_nav_li {
+cursor: hand; cursor: pointer;
+}
+
+li {
+  float:        left;
+  position: relative;
+}
+
+a {
+  text-decoration:  none;
+  color:           black;
+  font-weight:      bold;
+}
+
+#navbar_posish {
+  margin-left: 225px;
+}
+
+#navbar_div {
+  width:               100px;
+  height:               39px;
+  border-style:        solid;
+  border-color:      #000000;
+  border-width:          2px;
+  border-left-width:     0px;
+  background-color:  #ccd1d9;
+  float:             inherit;
+}
+
+#navbar_div_left {
+  width:              100px;
+  height:              39px;
+  border-style:       solid;
+  border-color:     #000000;
+  border-width:         2px;
+  background-color: #ccd1d9;
+  float:            inherit;
+}
+
+#recent_view {
+  margin-left: 300px;
+  padding-bottom: 33px;
+}
+
+#footer ul li {
+  padding-right: 4px;
+  padding-left:  4px;
+}
+
+#footer ul li a {
+  font: 10px/1.5em Lucida Grande, Lucida Sans Unicode, sans-serif;
+}
+
+#navigation li a {
+  font: 11px/1.5em Lucida Grande, Lucida Sans Unicode, sans-serif;
+}
+
+.submit_button {
+cursor: hand; cursor: pointer;
+}
