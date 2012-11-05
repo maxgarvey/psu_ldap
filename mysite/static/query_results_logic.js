@@ -120,6 +120,7 @@
     $("#modify").show();
     $("#success").hide();
 
+    $("html, body").animate({scrollTop: 0});
    });
 
   //this will hide the list and show the form when the user
