@@ -1,4 +1,12 @@
   $(document).ready( function(){
+   $("#id_modify_group_name").attr("size", "50");
+   $("#id_group_preferredcn").attr("size", "50");
+   $("#id_group_room").attr("size", "50");
+   $("#id_group_phone").attr("size", "50");
+   $("#id_group_email").attr("size", "50");
+   $("#id_group_name").attr("size", "50");
+   $("#id_group_labeledUri").attr("size", "50");
+
    //this line hides the form initially
    $("#modify")       .addClass("inner").hide();
 
